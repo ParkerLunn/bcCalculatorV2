@@ -1,0 +1,3 @@
+antlr4 -no-listener -visitor Calculator.g4                     
+javac Main.java Calculator*.java -Xlint:deprecation -Xlint:unchecked
+java Main test.txt                                             
