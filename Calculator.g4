@@ -12,12 +12,13 @@ stat
  : assignment
  | if_stat
  | while_stat
- | log
+ | for_stat
+ | print
  | OTHER {System.err.println("unknown char: " + $OTHER.text);}
  ;
 
 assignment
- : ID ASSIGN expr SCOL
+ : ID ASSIGN expr 
  ;
 
 if_stat
@@ -37,12 +38,22 @@ while_stat
  : WHILE expr stat_block
  ;
 
-log
- : LOG expr SCOL
+for_stat
+ : FOR OPAR assignment SCOL expr SCOL expr CPAR stat_block
+ ;
+
+print
+ : expr
+ | PRINT (expr',')* expr
  ;
 
 expr
  : expr POW<assoc=right> expr           #powExpr
+ | op=(SIN | COS | LOG | EXP | SQRT | READ) OPAR expr CPAR #libFuncExpr
+ | INC ID                               #preIncExpr
+ | ID INC                               #postIncExpr
+ | DEC ID                               #preDecExpr
+ | ID DEC                               #postDecExpr
  | MINUS expr                           #unaryMinusExpr
  | NOT expr                             #notExpr
  | expr op=(MULT | DIV | MOD) expr      #multiplicationExpr
@@ -63,6 +74,8 @@ atom
  | NIL            #nilAtom
  ;
 
+INC: '++';
+DEC: '--';
 OR : '||';
 AND : '&&';
 EQ : '==';
@@ -92,7 +105,16 @@ NIL : 'nil';
 IF : 'if';
 ELSE : 'else';
 WHILE : 'while';
-LOG : 'log';
+FOR: 'for';
+PRINT : 'print';
+
+SIN: 's';
+COS: 'c';
+LOG: 'l';
+EXP: 'e';
+SQRT: 'sqrt';
+
+READ: 'read';
 
 ID
  : [a-zA-Z_] [a-zA-Z_0-9]*

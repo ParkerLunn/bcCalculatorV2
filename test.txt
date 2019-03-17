@@ -1,19 +1,23 @@
-n = 9;
-
+n = 9
+16*5
 while n > 0 {
 
   # expressions can be surrounded by parenthesis, of course
   if (n % 2 == 0) {
-    log n + " -> even";
+   print n + " -> even"
   }
   else {
-    log n + " -> odd";
+    print n + " -> odd"
   }
 
-  n = n - 1;
+  n = n-1
 }
 
-log 16*5;
-log 2^4;
-i=5;
-log i;
+16*5
+2^4
+i=5
+i++
+++i
+for(x=0;x<3;x++){
+  print i
+}

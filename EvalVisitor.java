@@ -4,6 +4,7 @@ import org.antlr.v4.runtime.misc.NotNull;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Scanner;
 
 public class EvalVisitor extends CalculatorBaseVisitor<Value> {
 
@@ -65,7 +66,8 @@ public class EvalVisitor extends CalculatorBaseVisitor<Value> {
     public Value visitPowExpr(CalculatorParser.PowExprContext ctx) {
         Value left = this.visit(ctx.expr(0));
         Value right = this.visit(ctx.expr(1));
-        return new Value(Math.pow(left.asDouble(), right.asDouble()));
+        Value val = new Value(Math.pow(left.asDouble(), right.asDouble()));
+        return val;
     }
 
     @Override
@@ -80,19 +82,54 @@ public class EvalVisitor extends CalculatorBaseVisitor<Value> {
         return new Value(!value.asBoolean());
     }
 
+    @Override 
+    public Value visitPreIncExpr(CalculatorParser.PreIncExprContext ctx) {
+        String id = ctx.ID().getText();
+        Value value = memory.get(id);
+        memory.put(id, new Value(value.asDouble()+1));
+        return new Value(value.asDouble()+1);
+    }
+
+    @Override 
+    public Value visitPostIncExpr(CalculatorParser.PostIncExprContext ctx) {
+        String id = ctx.ID().getText();
+        Value value = memory.get(id);
+        memory.put(id, new Value(value.asDouble()+1));
+        return new Value(value.asDouble());
+    }
+
+    @Override 
+    public Value visitPreDecExpr(CalculatorParser.PreDecExprContext ctx) {
+        String id = ctx.ID().getText();
+        Value value = memory.get(id);
+        memory.put(id, new Value(value.asDouble()-1));
+        return new Value(value.asDouble()-1);
+    }
+
+    @Override 
+    public Value visitPostDecExpr(CalculatorParser.PostDecExprContext ctx) {
+        String id = ctx.ID().getText();
+        Value value = memory.get(id);
+        memory.put(id, new Value(value.asDouble()-1));
+        return new Value(value.asDouble());
+    }
+
     @Override
     public Value visitMultiplicationExpr(@NotNull CalculatorParser.MultiplicationExprContext ctx) {
 
         Value left = this.visit(ctx.expr(0));
         Value right = this.visit(ctx.expr(1));
-
+        Value val;
         switch (ctx.op.getType()) {
             case CalculatorParser.MULT:
-                return new Value(left.asDouble() * right.asDouble());
+                val = new Value(left.asDouble() * right.asDouble());
+                return val;
             case CalculatorParser.DIV:
-                return new Value(left.asDouble() / right.asDouble());
+                val = new Value(left.asDouble() / right.asDouble());
+                return val;
             case CalculatorParser.MOD:
-                return new Value(left.asDouble() % right.asDouble());
+                val = new Value(left.asDouble() % right.asDouble());
+                return val;
             default:
                 throw new RuntimeException("unknown operator: " + CalculatorParser.tokenNames[ctx.op.getType()]);
         }
@@ -103,14 +140,16 @@ public class EvalVisitor extends CalculatorBaseVisitor<Value> {
 
         Value left = this.visit(ctx.expr(0));
         Value right = this.visit(ctx.expr(1));
-
+        Value val;
         switch (ctx.op.getType()) {
             case CalculatorParser.PLUS:
-                return left.isDouble() && right.isDouble() ?
+                val = left.isDouble() && right.isDouble() ?
                         new Value(left.asDouble() + right.asDouble()) :
                         new Value(left.asString() + right.asString());
+                return val;
             case CalculatorParser.MINUS:
-                return new Value(left.asDouble() - right.asDouble());
+                val = new Value(left.asDouble() - right.asDouble());
+                return val;
             default:
                 throw new RuntimeException("unknown operator: " + CalculatorParser.tokenNames[ctx.op.getType()]);
         }
@@ -121,6 +160,7 @@ public class EvalVisitor extends CalculatorBaseVisitor<Value> {
 
         Value left = this.visit(ctx.expr(0));
         Value right = this.visit(ctx.expr(1));
+        Value val;
 
         switch (ctx.op.getType()) {
             case CalculatorParser.LT:
@@ -157,6 +197,30 @@ public class EvalVisitor extends CalculatorBaseVisitor<Value> {
     }
 
     @Override
+    public Value visitLibFuncExpr(@NotNull CalculatorParser.LibFuncExprContext ctx){
+        Value value = this.visit(ctx.expr());
+
+        switch (ctx.op.getType()){
+            case CalculatorParser.SIN:
+                return new Value(Math.sin(value.asDouble()));
+            case CalculatorParser.COS:
+                return new Value(Math.cos(value.asDouble()));
+            case CalculatorParser.LOG:
+                return new Value(Math.log(value.asDouble()));
+            case CalculatorParser.EXP:
+                return new Value(Math.exp(value.asDouble()));
+            case CalculatorParser.SQRT:
+                return new Value(Math.sqrt(value.asDouble()));
+            case CalculatorParser.READ:
+                Scanner in = new Scanner(System.in);
+                return new Value(in.nextDouble());
+            default:
+                throw new RuntimeException("unknown operator: " + CalculatorParser.tokenNames[ctx.op.getType()]);
+
+        }
+    }
+
+    @Override
     public Value visitAndExpr(CalculatorParser.AndExprContext ctx) {
         Value left = this.visit(ctx.expr(0));
         Value right = this.visit(ctx.expr(1));
@@ -172,10 +236,21 @@ public class EvalVisitor extends CalculatorBaseVisitor<Value> {
 
     // log override
     @Override
-    public Value visitLog(CalculatorParser.LogContext ctx) {
-        Value value = this.visit(ctx.expr());
-        System.out.println(value);
-        return value;
+    public Value visitPrint(CalculatorParser.PrintContext ctx) {
+
+        List<CalculatorParser.ExprContext> exprList = ctx.expr();
+
+        for(CalculatorParser.ExprContext eCtx: exprList){
+
+            Value value = this.visit(eCtx);
+
+            if(!value.isBoolean())
+                System.out.println(value);
+            else
+                System.out.println(value.asBoolean()?"1":"0");
+        }
+
+        return Value.VOID;
     }
 
     // if override
@@ -222,5 +297,21 @@ public class EvalVisitor extends CalculatorBaseVisitor<Value> {
         }
 
         return Value.VOID;
+    }
+
+    @Override
+    public Value visitFor_stat(CalculatorParser.For_statContext ctx){
+        this.visit(ctx.assignment());
+        Value cond = this.visit(ctx.expr(0));
+
+        while(cond.asBoolean()){
+
+            this.visit(ctx.stat_block());
+
+            this.visit(ctx.expr(1));
+            cond=this.visit(ctx.expr(0));
+        }
+
+    return Value.VOID;
     }
 }
