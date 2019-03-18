@@ -1,10 +1,13 @@
 
 import org.antlr.v4.runtime.misc.NotNull;
 
+import java.io.FileNotFoundException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+
+import javax.management.RuntimeErrorException;
 
 public class EvalVisitor extends CalculatorBaseVisitor<Value> {
 
@@ -281,19 +284,40 @@ public class EvalVisitor extends CalculatorBaseVisitor<Value> {
         return Value.VOID;
     }
 
+    @Override 
+    public Value visitBrk(CalculatorParser.BrkContext ctx) {
+        throw new RuntimeException("break");
+    }
+    @Override 
+    public Value visitCont(CalculatorParser.ContContext ctx) {
+        throw new RuntimeException("continue");
+    }
     // while override
     @Override
     public Value visitWhile_stat(CalculatorParser.While_statContext ctx) {
 
         Value value = this.visit(ctx.expr());
+        CalculatorParser.Stat_blockContext stb = ctx.stat_block();
 
+        List<CalculatorParser.StatContext> statList= ctx.stat_block().block().stat();
+
+        outer:
         while(value.asBoolean()) {
 
             // evaluate the code block
-            this.visit(ctx.stat_block());
-
-            // evaluate the expression
-            value = this.visit(ctx.expr());
+            try{
+                for(CalculatorParser.StatContext stc : statList){
+                    Value val = this.visit(stc);
+                }
+                // evaluate the expression
+                value = this.visit(ctx.expr());
+            }                
+            catch(RuntimeException e){
+                if(e.getMessage().equals("break"))
+                    break;
+                if(e.getMessage().equals("continue"))
+                    continue;
+            }
         }
 
         return Value.VOID;
@@ -303,14 +327,29 @@ public class EvalVisitor extends CalculatorBaseVisitor<Value> {
     public Value visitFor_stat(CalculatorParser.For_statContext ctx){
         this.visit(ctx.assignment());
         Value cond = this.visit(ctx.expr(0));
+        List<CalculatorParser.StatContext> statList= ctx.stat_block().block().stat();
 
+        outer:
         while(cond.asBoolean()){
-
-            this.visit(ctx.stat_block());
-
+            try{
+            for(CalculatorParser.StatContext stc : statList){
+                    Value val = this.visit(stc);
+            
+            }
             this.visit(ctx.expr(1));
             cond=this.visit(ctx.expr(0));
         }
+        catch(RuntimeException e){
+            if(e.getMessage().equals("break"))
+                break outer;
+            if(e.getMessage().equals("continue"))
+            {
+                this.visit(ctx.expr(1));
+                continue;
+            }
+                
+        }
+    }
 
     return Value.VOID;
     }

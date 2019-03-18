@@ -10,9 +10,12 @@ block
 
 stat
  : assignment
- | if_stat
+ | if_stat 
  | while_stat
  | for_stat
+ | cont
+ | brk 
+ | ret
  | print
  | OTHER {System.err.println("unknown char: " + $OTHER.text);}
  ;
@@ -47,6 +50,10 @@ print
  | PRINT (expr',')* expr
  ;
 
+cont: CONT ;
+brk: BREAK ;
+ret: RET ;
+
 expr
  : expr POW<assoc=right> expr           #powExpr
  | op=(SIN | COS | LOG | EXP | SQRT | READ) OPAR expr CPAR #libFuncExpr
@@ -64,6 +71,7 @@ expr
  | expr OR expr                         #orExpr
  | atom                                 #atomExpr
  ;
+
 
 atom
  : OPAR expr CPAR #parExpr
@@ -107,6 +115,9 @@ ELSE : 'else';
 WHILE : 'while';
 FOR: 'for';
 PRINT : 'print';
+BREAK : 'break';
+CONT: 'continue';
+RET: 'return'; 
 
 SIN: 's';
 COS: 'c';

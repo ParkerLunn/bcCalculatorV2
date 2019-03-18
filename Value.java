@@ -1,11 +1,28 @@
 public class Value {
 
     public static Value VOID = new Value(new Object());
+    public static Value BREAK = new Value("break");
+    public static Value CONT = new Value("continue");
 
     final Object value;
+    public boolean brk;
+    public boolean cont;
     
     public Value(Object value) {
         this.value = value;
+        this.brk=false;
+        this.cont=false;
+    }
+
+    public Value(Object value, boolean brk){
+        this.value = value;
+        this.brk=brk;
+    }
+
+    public Value(Object value, boolean brk, boolean cont){
+        this.value = value;
+        this.brk=brk;
+        this.cont=cont;
     }
 
     public Boolean asBoolean() {
